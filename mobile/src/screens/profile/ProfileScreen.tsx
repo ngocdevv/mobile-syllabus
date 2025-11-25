@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,14 +24,15 @@ const MenuItem = ({ title, subtitle, onPress, isLast }: MenuItemProps) => (
 
 const ProfileScreen = () => {
     const { user, logout } = useAuth();
+    const navigation = useNavigation<any>();
 
     const menuItems = [
-        { title: 'My orders', subtitle: 'Already have 12 orders' },
+        { title: 'My orders', subtitle: 'Already have 12 orders', route: 'MyOrders' },
         { title: 'Shipping addresses', subtitle: '3 addresses' },
         { title: 'Payment methods', subtitle: 'Visa **34' },
         { title: 'Promocodes', subtitle: 'You have special promocodes' },
         { title: 'My reviews', subtitle: 'Reviews for 4 items' },
-        { title: 'Settings', subtitle: 'Notifications, password' },
+        { title: 'Settings', subtitle: 'Notifications, password', route: 'Settings' },
     ];
 
     return (
@@ -55,6 +57,7 @@ const ProfileScreen = () => {
                             key={index}
                             title={item.title}
                             subtitle={item.subtitle}
+                            onPress={() => item.route && navigation.navigate(item.route)}
                             isLast={index === menuItems.length - 1}
                         />
                     ))}

@@ -8,6 +8,9 @@ import ProductReviewsScreen from '../screens/shop/ProductReviewsScreen';
 import BagScreen from '../screens/bag/BagScreen';
 import ShopScreen from '../screens/shop/ShopScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import MyOrdersScreen from '../screens/profile/MyOrdersScreen';
+import OrderDetailScreen from '../screens/profile/OrderDetailScreen';
+import SettingsScreen from '../screens/profile/SettingsScreen';
 import { HomeIcon, ShopIcon, BagIcon, ProfileIcon } from '../components/TabBarIcons';
 import CatalogScreen from '../screens/shop/CatalogScreen';
 
@@ -31,6 +34,17 @@ const ShopStack = () => {
             <Stack.Screen name="Catalog" component={CatalogScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
             <Stack.Screen name="ProductReviews" component={ProductReviewsScreen} />
+        </Stack.Navigator>
+    );
+};
+
+const ProfileStack = () => {
+    return (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="ProfileMain" component={ProfileScreen} />
+            <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
+            <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
         </Stack.Navigator>
     );
 };
@@ -82,7 +96,7 @@ const MainNavigator = () => {
             />
             <Tab.Screen
                 name="Profile"
-                component={ProfileScreen}
+                component={ProfileStack}
                 options={{
                     tabBarIcon: ({ focused, color }) => (
                         <ProfileIcon focused={focused} color={color} size={24} />

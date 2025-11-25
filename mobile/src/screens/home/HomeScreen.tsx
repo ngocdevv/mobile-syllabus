@@ -1,7 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React from 'react';
+import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getCategories } from '../../api/categories';
 import { getProducts } from '../../api/products';
 import ProductCard from '../../components/ProductCard';
@@ -39,7 +38,7 @@ const HomeScreen = () => {
     );
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.container}>
             <FlatList
                 data={products}
                 keyExtractor={(item) => item.id}
@@ -50,7 +49,7 @@ const HomeScreen = () => {
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
             />
-        </SafeAreaView>
+        </View>
     );
 };
 

@@ -3,19 +3,64 @@ import { supabase } from '../config/supabase';
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
-    let query = supabase.from('products').select('*, categories(name)');
+    const { 
+      category_id, 
+      brand_id, 
+      min_price, 
+      max_price, 
+      sort_by, 
+      search,
+      page = 1,
+      limit = 10 
+    } = req.query;
 
-    if (req.query.category_id) {
-      query = query.eq('category_id', req.query.category_id);
-    }
+    let query = supabase
+      .from('products')
+      .select('*, categories(name), brands(name), product_images(image_url)', { count: 'exact' })
+      .eq('is_active', true);
 
-    const { data, error } = await query;
+    if (category_id) query = query.eq('category_id', category_id);
+    if (brand_id) query = query.eq('brand_id', brand_id);
+    if (min_price) query = query.gte('price', min_price);
+    if (max_price) query = query.lte('price', max_price);
+    if (search) query = query.ilike('name', `%${search}%`);
+
+    if (sort_by === 'price_asc') query = query.order('price', { ascending: true });
+    else if (sort_by === 'price_desc') query = query.order('price', { ascending: false });
+    else if (sort_by === 'newest') query = query.order('created_at', { ascending: false });
+    else if (sort_by === 'rating') query = query.order('rating_average', { ascending: false });
+    else query = query.order('created_at', { ascending: false }); // Default
+
+    // Pagination
+    const from = (Number(page) - 1) * Number(limit);
+    const to = from + Number(limit) - 1;
+    query = query.range(from, to);
+
+    const { data, error, count } = await query;
 
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    res.status(200).json(data);
+    // Process images to return only the primary one or first one
+    const products = data.map((product: any) => {
+      const primaryImage = product.product_images?.[0]?.image_url || null;
+      return {
+        ...product,
+        image_url: primaryImage,
+        product_images: undefined // Clean up
+      };
+    });
+
+    res.status(200).json({
+      data: products,
+      pagination: {
+        total: count,
+        page: Number(page),
+        limit: Number(limit),
+        total_pages: Math.ceil((count || 0) / Number(limit))
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -27,7 +72,21 @@ export const getProductById = async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase
       .from('products')
-      .select('*, product_variants(*)')
+      .select(`
+        *,
+        categories(id, name),
+        brands(id, name, logo_url),
+        product_variants(*),
+        product_images(*),
+        product_attribute_values(
+          *,
+          product_attributes(name, display_name, type)
+        ),
+        reviews(
+          id, rating, comment, created_at,
+          users(full_name, avatar_url)
+        )
+      `)
       .eq('id', id)
       .single();
 

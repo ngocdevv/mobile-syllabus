@@ -1,19 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../config/supabase';
+import jwt from 'jsonwebtoken';
 
-export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1];
+export interface AuthRequest extends Request {
+  user?: any;
+}
+
+export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Access token required' });
   }
 
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const secret = process.env.JWT_SECRET || 'your_jwt_secret';
+    const decoded = jwt.verify(token, secret);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid or expired token' });
   }
-
-  (req as any).user = user;
-  next();
 };

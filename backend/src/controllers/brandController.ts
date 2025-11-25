@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 
-export const getCategories = async (req: Request, res: Response) => {
+export const getBrands = async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase
-      .from('categories')
+      .from('brands')
       .select('*')
       .eq('is_active', true)
-      .order('display_order', { ascending: true });
+      .order('name', { ascending: true });
 
     if (error) {
       return res.status(400).json({ error: error.message });
@@ -19,17 +19,17 @@ export const getCategories = async (req: Request, res: Response) => {
   }
 };
 
-export const getCategoryById = async (req: Request, res: Response) => {
+export const getBrandById = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const { data, error } = await supabase
-      .from('categories')
+      .from('brands')
       .select('*')
       .eq('id', id)
       .single();
 
     if (error) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: 'Brand not found' });
     }
 
     res.status(200).json(data);

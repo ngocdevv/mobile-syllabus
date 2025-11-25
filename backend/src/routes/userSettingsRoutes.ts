@@ -1,13 +1,12 @@
 import { Router } from 'express';
-import { createOrder, getOrders, getOrderById } from '../controllers/orderController';
+import { getSettings, updateSettings } from '../controllers/userSettingsController';
 import { authenticateToken } from '../middlewares/authMiddleware';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-router.post('/', createOrder);
-router.get('/', getOrders);
-router.get('/:id', getOrderById);
+router.get('/', getSettings);
+router.put('/', updateSettings);
 
 export default router;

@@ -8,7 +8,12 @@ import ProductCard from '../../components/ProductCard';
 
 const HomeScreen = () => {
     const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
-    const { data: products } = useQuery({ queryKey: ['products'], queryFn: () => getProducts() });
+    const { data: productsData } = useQuery({
+        queryKey: ['products', 'newest'],
+        queryFn: () => getProducts({ sort_by: 'newest', limit: 10 })
+    });
+
+    const products = productsData?.data || [];
 
     const renderHeader = () => (
         <View>

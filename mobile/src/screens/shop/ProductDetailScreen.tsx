@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Alert, Dimensions } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useQuery } from '@tanstack/react-query';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,7 +32,7 @@ const ProductDetailScreen = () => {
         // For now, we'll just pick the first variant or error if none
         if (product.product_variants && product.product_variants.length > 0) {
             const variantId = product.product_variants[0].id;
-            addToCart({ variantId, quantity: 1 }, {
+            addToCart({ productId: product.id, variantId, quantity: 1 }, {
                 onSuccess: () => {
                     Alert.alert('Success', 'Added to cart');
                 },
@@ -45,21 +45,39 @@ const ProductDetailScreen = () => {
         }
     };
 
+    console.log("product---", product)
+
     return (
         <View style={styles.container}>
             <ScrollView>
-                <Image source={{ uri: product.main_image_url }} style={styles.image} />
+                <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.imageContainer}>
+                    {product.product_images && product.product_images.length > 0 ? (
+                        product.product_images.map((img: any) => (
+                            <Image key={img.id} source={{ uri: img.image_url }} style={styles.image} />
+                        ))
+                    ) : (
+                        <Image source={{ uri: product.image_url || 'https://via.placeholder.com/400' }} style={styles.image} />
+                    )}
+                </ScrollView>
 
                 <View style={styles.infoContainer}>
                     <View style={styles.headerRow}>
                         <View>
-                            <Text style={styles.brand}>{product.brand}</Text>
-                            <Text style={styles.title}>{product.title}</Text>
+                            <Text style={styles.brand}>{product.brands?.name || 'Brand'}</Text>
+                            <Text style={styles.title}>{product.name}</Text>
                         </View>
                         <Text style={styles.price}>${product.price}</Text>
                     </View>
 
                     <Text style={styles.description}>{product.description}</Text>
+
+                    {/* Simple Variant Selector (if variants exist) */}
+                    {product.product_variants && product.product_variants.length > 0 && (
+                        <View style={styles.variantContainer}>
+                            <Text style={styles.variantLabel}>Size: {product.product_variants[0].size}</Text>
+                            <Text style={styles.variantLabel}>Color: {product.product_variants[0].color}</Text>
+                        </View>
+                    )}
 
                     <Button title="ADD TO CART" onPress={handleAddToCart} />
                 </View>
@@ -90,7 +108,7 @@ const styles = StyleSheet.create({
         color: '#F6F6F6',
     },
     image: {
-        width: '100%',
+        width: Dimensions.get('window').width,
         height: 413,
     },
     infoContainer: {
@@ -145,6 +163,23 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginLeft: 16,
+    },
+    imageContainer: {
+        height: 413,
+        width: '100%',
+    },
+    variantContainer: {
+        flexDirection: 'row',
+        marginBottom: 20,
+        gap: 16,
+    },
+    variantLabel: {
+        color: '#F6F6F6',
+        fontSize: 16,
+        backgroundColor: '#2A2C36',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 4,
     }
 });
 

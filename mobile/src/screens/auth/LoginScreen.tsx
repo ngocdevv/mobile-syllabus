@@ -30,8 +30,8 @@ const LoginScreen = () => {
                 password: data.password,
             });
 
-            const { user, session } = response.data;
-            login(user, session.access_token);
+            const { user, token } = response.data;
+            login(user, token);
         } catch (error: any) {
             Alert.alert('Login Failed', error.response?.data?.error || 'Something went wrong');
         }

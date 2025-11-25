@@ -10,7 +10,7 @@ const BagScreen = () => {
     const { cartItems, isLoading, updateCartItem, removeFromCart } = useCart();
 
     const totalAmount = cartItems?.reduce((sum: number, item: any) => {
-        return sum + (item.product_variants.products.price * item.quantity);
+        return sum + (item.price * item.quantity);
     }, 0) || 0;
 
     const handleCheckout = async () => {

@@ -27,14 +27,14 @@ const SignUpScreen = () => {
 
     const onSubmit = async (data: SignUpFormData) => {
         try {
-            const response = await client.post('/auth/signup', {
+            const response = await client.post('/auth/register', {
                 email: data.email,
                 password: data.password,
                 full_name: data.name,
             });
 
-            const { user, session } = response.data;
-            login(user, session.access_token);
+            const { user, token } = response.data;
+            login(user, token);
         } catch (error: any) {
             Alert.alert('Sign Up Failed', error.response?.data?.error || 'Something went wrong');
         }

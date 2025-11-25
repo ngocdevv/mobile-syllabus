@@ -8,19 +8,17 @@ interface CartItemProps {
 }
 
 const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRemove }) => {
-    const product = item.product_variants.products;
-
     return (
         <View style={styles.container}>
-            <Image source={{ uri: product.main_image_url }} style={styles.image} />
+            <Image source={{ uri: item.image_url || 'https://via.placeholder.com/104' }} style={styles.image} />
             <View style={styles.infoContainer}>
                 <View style={styles.headerRow}>
-                    <Text style={styles.title} numberOfLines={1}>{product.title}</Text>
+                    <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
                     <TouchableOpacity onPress={() => onRemove(item.id)}>
                         <Text style={styles.removeText}>X</Text>
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.variant}>Color: {item.product_variants.color}   Size: {item.product_variants.size}</Text>
+                <Text style={styles.variant}>Color: {item.color || 'N/A'}   Size: {item.size || 'N/A'}</Text>
 
                 <View style={styles.footerRow}>
                     <View style={styles.quantityContainer}>
@@ -32,7 +30,7 @@ const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRemove })
                             <Text style={styles.qtyButtonText}>+</Text>
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.price}>${product.price * item.quantity}</Text>
+                    <Text style={styles.price}>${item.price * item.quantity}</Text>
                 </View>
             </View>
         </View>

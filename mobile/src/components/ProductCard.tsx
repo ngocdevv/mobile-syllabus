@@ -4,12 +4,12 @@ import { useNavigation } from '@react-navigation/native';
 
 interface Product {
     id: string;
-    title: string;
+    name: string;
     price: number;
-    main_image_url: string;
-    brand: string;
-    rating: number;
-    review_count: number;
+    image_url: string;
+    brands: { name: string };
+    rating_average: number;
+    rating_count: number;
 }
 
 interface ProductCardProps {
@@ -25,16 +25,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             onPress={() => navigation.navigate('ProductDetail', { productId: product.id })}
         >
             <View style={styles.imageContainer}>
-                <Image source={{ uri: product.main_image_url }} style={styles.image} />
+                <Image source={{ uri: product.image_url || 'https://via.placeholder.com/150' }} style={styles.image} />
                 {/* Discount badge could go here */}
             </View>
             <View style={styles.infoContainer}>
                 <View style={styles.ratingContainer}>
                     {/* Stars could go here */}
-                    <Text style={styles.ratingText}>({product.review_count})</Text>
+                    <Text style={styles.ratingText}>({product.rating_count || 0})</Text>
                 </View>
-                <Text style={styles.brand}>{product.brand}</Text>
-                <Text style={styles.title} numberOfLines={1}>{product.title}</Text>
+                <Text style={styles.brand}>{product.brands?.name || 'Brand'}</Text>
+                <Text style={styles.title} numberOfLines={1}>{product.name}</Text>
                 <Text style={styles.price}>${product.price}</Text>
             </View>
         </TouchableOpacity>

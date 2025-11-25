@@ -5,16 +5,17 @@ export const getCart = async () => {
   return response.data;
 };
 
-export const addToCart = async (productVariantId: string, quantity: number) => {
-  const response = await client.post('/cart', { product_variant_id: productVariantId, quantity });
+export const addToCart = async (productId, variantId, quantity) => {
+  const response = await client.post('/cart', { product_id: productId, variant_id: variantId, quantity });
   return response.data;
 };
 
-export const updateCartItem = async (itemId: string, quantity: number) => {
-  const response = await client.put(`/cart/${itemId}`, { quantity });
+export const updateCartItem = async (id, quantity) => {
+  const response = await client.put(`/cart/${id}`, { quantity });
   return response.data;
 };
 
-export const removeFromCart = async (itemId: string) => {
-  await client.delete(`/cart/${itemId}`);
+export const removeCartItem = async (id) => {
+  const response = await client.delete(`/cart/${id}`);
+  return response.data;
 };

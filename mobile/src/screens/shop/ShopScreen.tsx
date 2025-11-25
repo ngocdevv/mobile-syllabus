@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { getCategories } from '../../api/categories';
 
 const ShopScreen = () => {
+    const navigation = useNavigation<any>();
     const { data: categories, isLoading } = useQuery({ queryKey: ['categories'], queryFn: getCategories });
 
     if (isLoading) {
@@ -19,7 +21,10 @@ const ShopScreen = () => {
                 data={categories}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.categoryItem}>
+                    <TouchableOpacity
+                        style={styles.categoryItem}
+                        onPress={() => navigation.navigate('Catalog', { categoryId: item.id, categoryName: item.name })}
+                    >
                         <Text style={styles.categoryName}>{item.name}</Text>
                         {item.image_url && <Image source={{ uri: item.image_url }} style={styles.categoryImage} />}
                     </TouchableOpacity>

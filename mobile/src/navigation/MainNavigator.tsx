@@ -21,6 +21,18 @@ const HomeStack = () => {
     );
 };
 
+import CatalogScreen from '../screens/shop/CatalogScreen';
+
+const ShopStack = () => {
+    return (
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="ShopMain" component={ShopScreen} />
+            <Stack.Screen name="Catalog" component={CatalogScreen} />
+            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+        </Stack.Navigator>
+    );
+};
+
 const MainNavigator = () => {
     const insets = useSafeAreaInsets();
 
@@ -50,7 +62,7 @@ const MainNavigator = () => {
             />
             <Tab.Screen
                 name="Shop"
-                component={ShopScreen}
+                component={ShopStack}
                 options={{
                     tabBarIcon: ({ focused, color }) => (
                         <ShopIcon focused={focused} color={color} size={24} />

@@ -4,10 +4,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/home/HomeScreen';
 import ProductDetailScreen from '../screens/shop/ProductDetailScreen';
+import ProductReviewsScreen from '../screens/shop/ProductReviewsScreen';
 import BagScreen from '../screens/bag/BagScreen';
 import ShopScreen from '../screens/shop/ShopScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import { HomeIcon, ShopIcon, BagIcon, ProfileIcon } from '../components/TabBarIcons';
+import CatalogScreen from '../screens/shop/CatalogScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -17,11 +19,10 @@ const HomeStack = () => {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             <Stack.Screen name="HomeMain" component={HomeScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="ProductReviews" component={ProductReviewsScreen} />
         </Stack.Navigator>
     );
 };
-
-import CatalogScreen from '../screens/shop/CatalogScreen';
 
 const ShopStack = () => {
     return (
@@ -29,6 +30,7 @@ const ShopStack = () => {
             <Stack.Screen name="ShopMain" component={ShopScreen} />
             <Stack.Screen name="Catalog" component={CatalogScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="ProductReviews" component={ProductReviewsScreen} />
         </Stack.Navigator>
     );
 };

@@ -12,7 +12,7 @@ import SelectionBottomSheet from '../../components/SelectionBottomSheet';
 
 const ProductDetailScreen = () => {
     const route = useRoute<any>();
-    const navigation = useNavigation();
+    const navigation = useNavigation<any>();
     const { productId } = route.params;
     const { data: product, isLoading } = useQuery({
         queryKey: ['product', productId],
@@ -111,12 +111,15 @@ const ProductDetailScreen = () => {
                         <View>
                             <Text style={styles.brand}>{product.brands?.name || 'Brand'}</Text>
                             <Text style={styles.title}>{product.name}</Text>
-                            <View style={styles.ratingContainer}>
+                            <TouchableOpacity
+                                style={styles.ratingContainer}
+                                onPress={() => navigation.navigate('ProductReviews', { productId: product.id })}
+                            >
                                 {[1, 2, 3, 4, 5].map((star) => (
                                     <Ionicons key={star} name="star" size={14} color="#FFBA49" />
                                 ))}
                                 <Text style={styles.ratingCount}>(10)</Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
                         <Text style={styles.price}>${product.price}</Text>
                     </View>

@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
 import { AuthRequest } from '../middlewares/authMiddleware';
 
@@ -136,6 +136,74 @@ export const getOrderById = async (req: AuthRequest, res: Response) => {
       `)
       .eq('id', id)
       .eq('user_id', userId)
+      .single();
+
+    if (error) return res.status(404).json({ error: 'Order not found' });
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const getAllOrders = async (req: AuthRequest, res: Response) => {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*, users(full_name, email)')
+      .order('created_at', { ascending: false });
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const deleteOrder = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(200).json({ message: 'Order deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const getAdminOrderById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        order_items (*, products(product_images(image_url))),
+        shipping_addresses (*),
+        payment_methods (*)
+      `)
+      .eq('id', id)
       .single();
 
     if (error) return res.status(404).json({ error: 'Order not found' });

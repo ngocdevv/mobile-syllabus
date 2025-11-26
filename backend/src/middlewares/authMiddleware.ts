@@ -41,3 +41,28 @@ export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction
     next();
   }
 };
+
+import { supabase } from '../config/supabase';
+
+export const authorizeAdmin = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error || !user || user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+

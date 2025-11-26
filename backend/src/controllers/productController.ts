@@ -135,3 +135,97 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+export const createProduct = async (req: Request, res: Response) => {
+  const { name, description, price, original_price, stock_quantity, category_id, brand_id, image_url } = req.body;
+  try {
+    const { data: product, error } = await supabase
+      .from('products')
+      .insert([{
+        name,
+        description,
+        price,
+        original_price,
+        stock_quantity,
+        category_id,
+        brand_id
+      }])
+      .select()
+      .single();
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    if (image_url) {
+      await supabase
+        .from('product_images')
+        .insert([{ product_id: product.id, image_url, is_primary: true }]);
+    }
+
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const updateProduct = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, description, price, original_price, stock_quantity, category_id, brand_id, image_url, is_active } = req.body;
+  try {
+    const { data: product, error } = await supabase
+      .from('products')
+      .update({
+        name,
+        description,
+        price,
+        original_price,
+        stock_quantity,
+        category_id,
+        brand_id,
+        is_active
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    if (image_url) {
+      const { data: existingImage } = await supabase
+        .from('product_images')
+        .select('id')
+        .eq('product_id', id)
+        .eq('is_primary', true)
+        .single();
+
+      if (existingImage) {
+        await supabase
+          .from('product_images')
+          .update({ image_url })
+          .eq('id', existingImage.id);
+      } else {
+        await supabase
+          .from('product_images')
+          .insert([{ product_id: id, image_url, is_primary: true }]);
+      }
+    }
+
+    res.status(200).json(product);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const deleteProduct = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(200).json({ message: 'Product deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

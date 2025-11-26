@@ -13,6 +13,8 @@ import paymentRoutes from './routes/paymentRoutes';
 import promocodeRoutes from './routes/promocodeRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import userSettingsRoutes from './routes/userSettingsRoutes';
+import uploadRoutes from './routes/uploadRoutes';
+import userRoutes from './routes/userRoutes';
 
 const app = express();
 
@@ -32,6 +34,7 @@ app.use('/payments', paymentRoutes);
 app.use('/promocodes', promocodeRoutes);
 app.use('/notifications', notificationRoutes);
 app.use('/settings', userSettingsRoutes);
+app.use('/upload', uploadRoutes);
 
 app.get('/', (req, res) => {
   res.send('Fashion Ecommerce API is running');

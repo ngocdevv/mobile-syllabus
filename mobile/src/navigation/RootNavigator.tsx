@@ -13,14 +13,9 @@ const RootNavigator = () => {
     return (
         <NavigationContainer>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {isAuthenticated ? (
-                    <>
-                        <Stack.Screen name="MainStack" component={MainNavigator} />
-                    </>
-                ) : (
-                    <>
-                        <Stack.Screen name="AuthStack" component={AuthNavigator} />
-                    </>
+                <Stack.Screen name="MainStack" component={MainNavigator} />
+                {!isAuthenticated && (
+                    <Stack.Screen name="AuthStack" component={AuthNavigator} />
                 )}
             </Stack.Navigator>
         </NavigationContainer>

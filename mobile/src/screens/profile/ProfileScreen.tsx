@@ -46,8 +46,8 @@ const ProfileScreen = () => {
                         style={styles.avatar}
                     />
                     <View style={styles.userDetails}>
-                        <Text style={styles.userName}>{user?.full_name || 'User Name'}</Text>
-                        <Text style={styles.userEmail}>{user?.email}</Text>
+                        <Text style={styles.userName}>{user?.full_name || 'Guest User'}</Text>
+                        <Text style={styles.userEmail}>{user?.email || 'Please log in to continue'}</Text>
                     </View>
                 </View>
 
@@ -61,25 +61,17 @@ const ProfileScreen = () => {
                             isLast={index === menuItems.length - 1}
                         />
                     ))}
-
-                    {/* Logout as a menu item or separate? Usually separate or at bottom. 
-                        Design often has it as a separate button or just another item. 
-                        I'll keep it as a separate item for clarity or integrate if needed.
-                        For now, I'll add it as a special item at the end or keep the button if the design had a button.
-                        The previous code had a button. The Fively design usually has a list. 
-                        I'll add a specific Logout item or keep the button if it fits better.
-                        Let's add it as a MenuItem for consistency but maybe with different styling or just append to list.
-                        Actually, let's keep the logout logic separate for now, maybe as the last item or a button below.
-                        I'll add a "Log Out" item to the list for now to match the "list" look, 
-                        or keep the button if the user prefers. The previous code had a button.
-                        Let's stick to the list for the main items.
-                    */}
                 </View>
 
-                {/* Logout Button - keeping it accessible */}
-                <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                    <Text style={styles.logoutText}>Log Out</Text>
-                </TouchableOpacity>
+                {user ? (
+                    <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                        <Text style={styles.logoutText}>Log Out</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity style={styles.logoutButton} onPress={() => navigation.navigate('AuthStack')}>
+                        <Text style={styles.logoutText}>Log In</Text>
+                    </TouchableOpacity>
+                )}
 
             </ScrollView>
         </SafeAreaView>

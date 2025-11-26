@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { supabase } from '../config/supabase';
+import { AuthRequest } from '../middlewares/authMiddleware';
 
-export const getProducts = async (req: Request, res: Response) => {
+export const getProducts = async (req: AuthRequest, res: Response) => {
   try {
     const { 
       category_id, 
@@ -43,7 +44,7 @@ export const getProducts = async (req: Request, res: Response) => {
     }
 
     // Process images to return only the primary one or first one
-    const products = data.map((product: any) => {
+    let products = data.map((product: any) => {
       const primaryImage = product.product_images?.[0]?.image_url || null;
       return {
         ...product,
@@ -51,6 +52,26 @@ export const getProducts = async (req: Request, res: Response) => {
         product_images: undefined // Clean up
       };
     });
+
+    // Check favorites if user is logged in
+    if (req.user) {
+        const productIds = products.map((p: any) => p.id);
+        if (productIds.length > 0) {
+            const { data: favorites } = await supabase
+                .from('favorites')
+                .select('product_id')
+                .eq('user_id', req.user.id)
+                .in('product_id', productIds);
+            
+            const favoriteIds = new Set(favorites?.map((f: any) => f.product_id));
+            products = products.map((p: any) => ({
+                ...p,
+                is_favorite: favoriteIds.has(p.id)
+            }));
+        }
+    } else {
+        products = products.map((p: any) => ({ ...p, is_favorite: false }));
+    }
 
     res.status(200).json({
       data: products,
@@ -66,7 +87,7 @@ export const getProducts = async (req: Request, res: Response) => {
   }
 };
 
-export const getProductById = async (req: Request, res: Response) => {
+export const getProductById = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
 
   try {
@@ -94,7 +115,22 @@ export const getProductById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    res.status(200).json(data);
+    let product = data;
+
+    if (req.user) {
+        const { data: favorite } = await supabase
+            .from('favorites')
+            .select('id')
+            .eq('user_id', req.user.id)
+            .eq('product_id', id)
+            .single();
+        
+        product = { ...product, is_favorite: !!favorite };
+    } else {
+        product = { ...product, is_favorite: false };
+    }
+
+    res.status(200).json(product);
   } catch (err) {
     res.status(500).json({ error: 'Internal Server Error' });
   }

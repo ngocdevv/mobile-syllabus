@@ -22,10 +22,10 @@ export interface Category {
 export interface Product {
   id: number;
   name: string;
+  sku: string;
   description: string;
   price: number;
-  original_price?: number;
-  stock_quantity: number;
+  compare_price?: number;
   category_id: number;
   brand_id?: number;
   image_url: string;

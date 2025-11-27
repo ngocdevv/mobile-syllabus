@@ -137,19 +137,25 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
 };
 
 export const createProduct = async (req: Request, res: Response) => {
-  const { name, description, price, original_price, stock_quantity, category_id, brand_id, image_url } = req.body;
+  const { name, description, price, compare_price, category_id, brand_id, image_url, sku } = req.body;
   try {
+    // Generate SKU if not provided
+    const productSku = sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Prepare product data, handling optional brand_id
+    const productData: any = {
+      name,
+      description,
+      price,
+      compare_price,
+      sku: productSku,
+      category_id,
+      brand_id: brand_id && brand_id !== 0 ? brand_id : null
+    };
+
     const { data: product, error } = await supabase
       .from('products')
-      .insert([{
-        name,
-        description,
-        price,
-        original_price,
-        stock_quantity,
-        category_id,
-        brand_id
-      }])
+      .insert([productData])
       .select()
       .single();
 
@@ -169,20 +175,23 @@ export const createProduct = async (req: Request, res: Response) => {
 
 export const updateProduct = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, description, price, original_price, stock_quantity, category_id, brand_id, image_url, is_active } = req.body;
+  const { name, description, price, compare_price, category_id, brand_id, image_url, is_active, sku } = req.body;
   try {
+    // Prepare update data, handling optional brand_id
+    const updateData: any = {
+      name,
+      description,
+      price,
+      compare_price,
+      sku,
+      category_id,
+      brand_id: brand_id && brand_id !== 0 ? brand_id : null,
+      is_active
+    };
+
     const { data: product, error } = await supabase
       .from('products')
-      .update({
-        name,
-        description,
-        price,
-        original_price,
-        stock_quantity,
-        category_id,
-        brand_id,
-        is_active
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

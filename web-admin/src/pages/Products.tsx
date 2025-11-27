@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import api from '@/services/api';
+import { supabase } from '@/services/supabase';
 import type { Product, Category, Brand } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,10 +29,10 @@ import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
     name: z.string().min(1, "Name is required"),
+    sku: z.string().optional(),
     description: z.string().min(1, "Description is required"),
     price: z.coerce.number().min(0),
-    original_price: z.coerce.number().min(0).optional(),
-    stock_quantity: z.coerce.number().min(0),
+    compare_price: z.coerce.number().min(0).optional(),
     category_id: z.coerce.number().min(1, "Category is required"),
     brand_id: z.coerce.number().optional(),
     image_url: z.string().url("Image is required"),
@@ -54,32 +54,52 @@ export default function Products() {
         resolver: zodResolver(formSchema) as any,
         defaultValues: {
             name: '',
+            sku: '',
             description: '',
             price: 0,
-            original_price: 0,
-            stock_quantity: 0,
+            compare_price: 0,
             category_id: 0,
-            brand_id: 0,
+            brand_id: undefined,
             image_url: '',
         },
     });
 
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [productsRes, categoriesRes, brandsRes] = await Promise.all([
-                api.get(`/products?page=${page}&limit=10`),
-                api.get('/categories'),
-                api.get('/brands'),
-            ]);
-            setProducts(productsRes.data.data);
-            setTotalPages(productsRes.data.pagination.total_pages);
-            setCategories(categoriesRes.data);
-            setBrands(brandsRes.data);
+            // Fetch categories and brands
+            const { data: categoriesData } = await supabase.from('categories').select('*');
+            const { data: brandsData } = await supabase.from('brands').select('*');
+
+            setCategories(categoriesData || []);
+            setBrands(brandsData || []);
+
+            // Fetch products with pagination and join with product_images
+            const from = (page - 1) * ITEMS_PER_PAGE;
+            const to = from + ITEMS_PER_PAGE - 1;
+
+            const { data: productsData, count } = await supabase
+                .from('products')
+                .select('*, product_images(image_url)', { count: 'exact' })
+                .range(from, to)
+                .order('created_at', { ascending: false });
+
+            // Map image_url from product_images to product object
+            const mappedProducts = productsData?.map((p: any) => ({
+                ...p,
+                image_url: p.product_images?.[0]?.image_url || ''
+            })) || [];
+
+            setProducts(mappedProducts);
+            if (count) {
+                setTotalPages(Math.ceil(count / ITEMS_PER_PAGE));
+            }
         } catch (error) {
+            console.error(error);
             toast({ variant: "destructive", title: "Error", description: "Failed to fetch data" });
         } finally {
             setLoading(false);
@@ -94,45 +114,132 @@ export default function Products() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append('image', file);
-
         setUploading(true);
         try {
-            const response = await api.post('/upload', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-            form.setValue('image_url', response.data.url);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('products')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('products')
+                .getPublicUrl(filePath);
+
+            form.setValue('image_url', publicUrl);
             toast({ title: "Success", description: "Image uploaded" });
-        } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Upload failed" });
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: error.message || "Upload failed" });
         } finally {
             setUploading(false);
         }
     };
 
+    const createSlug = (name: string) => {
+        return name
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim()
+            .replace(/\s+/g, "-") + "-" + Date.now();
+    };
+
     const onSubmit = async (values: z.infer<typeof formSchema>) => {
         try {
+            const productSku = values.sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+            // Prepare product data (excluding image_url)
+            const productData = {
+                name: values.name,
+                sku: productSku,
+                slug: createSlug(values.name), // Generate slug
+                description: values.description,
+                price: values.price,
+                compare_price: values.compare_price,
+                category_id: values.category_id,
+                brand_id: values.brand_id && values.brand_id !== 0 ? values.brand_id : null
+            };
+
+            let productId;
+
             if (editingProduct) {
-                await api.put(`/products/${editingProduct.id}`, values);
+                productId = editingProduct.id;
+                // Update product (exclude slug update if not needed, but keeping it simple)
+                const { error: productError } = await supabase
+                    .from('products')
+                    .update(productData)
+                    .eq('id', productId);
+
+                if (productError) throw productError;
+
+                // Update image
+                const { data: existingImage } = await supabase
+                    .from('product_images')
+                    .select('id')
+                    .eq('product_id', productId)
+                    .eq('is_primary', true)
+                    .single();
+
+                if (existingImage) {
+                    await supabase
+                        .from('product_images')
+                        .update({ image_url: values.image_url })
+                        .eq('id', existingImage.id);
+                } else {
+                    await supabase
+                        .from('product_images')
+                        .insert([{ product_id: productId, image_url: values.image_url, is_primary: true }]);
+                }
+
                 toast({ title: "Success", description: "Product updated" });
             } else {
-                await api.post('/products', values);
+                // Create product
+                const { data: newProduct, error: productError } = await supabase
+                    .from('products')
+                    .insert([productData])
+                    .select()
+                    .single();
+
+                if (productError) throw productError;
+                productId = newProduct.id;
+
+                // Create image
+                const { error: imageError } = await supabase
+                    .from('product_images')
+                    .insert([{ product_id: productId, image_url: values.image_url, is_primary: true }]);
+
+                if (imageError) throw imageError;
+
                 toast({ title: "Success", description: "Product created" });
             }
             setOpen(false);
             setEditingProduct(null);
             form.reset();
             fetchData();
-        } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Operation failed" });
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: error.message || "Operation failed" });
         }
     };
 
     const handleDelete = async (id: number) => {
         if (!confirm("Are you sure?")) return;
         try {
-            await api.delete(`/products/${id}`);
+            // Delete images first
+            await supabase.from('product_images').delete().eq('product_id', id);
+
+            const { error } = await supabase
+                .from('products')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
             toast({ title: "Success", description: "Product deleted" });
             fetchData();
         } catch (error) {
@@ -144,12 +251,12 @@ export default function Products() {
         setEditingProduct(product);
         form.reset({
             name: product.name,
+            sku: product.sku,
             description: product.description,
             price: product.price,
-            original_price: product.original_price,
-            stock_quantity: product.stock_quantity,
+            compare_price: product.compare_price,
             category_id: product.category_id,
-            brand_id: product.brand_id,
+            brand_id: product.brand_id || undefined,
             image_url: product.image_url,
         });
         setOpen(true);
@@ -163,7 +270,7 @@ export default function Products() {
                     setOpen(val);
                     if (!val) {
                         setEditingProduct(null);
-                        form.reset({ name: '', description: '', price: 0, stock_quantity: 0, category_id: 0, brand_id: 0, image_url: '' });
+                        form.reset({ name: '', sku: '', description: '', price: 0, category_id: 0, brand_id: undefined, image_url: '' });
                     }
                 }}>
                     <DialogTrigger asChild>
@@ -183,6 +290,17 @@ export default function Products() {
                                             <FormItem>
                                                 <FormLabel>Name</FormLabel>
                                                 <FormControl><Input {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="sku"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>SKU (Auto-generated if empty)</FormLabel>
+                                                <FormControl><Input {...field} placeholder="Optional" /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -217,14 +335,18 @@ export default function Products() {
                                         name="brand_id"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Brand</FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(Number(val))} value={field.value?.toString()}>
+                                                <FormLabel>Brand (Optional)</FormLabel>
+                                                <Select
+                                                    onValueChange={(val) => field.onChange(val === "0" ? undefined : Number(val))}
+                                                    value={field.value ? field.value.toString() : "0"}
+                                                >
                                                     <FormControl>
                                                         <SelectTrigger>
                                                             <SelectValue placeholder="Select brand" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
+                                                        <SelectItem value="0">None</SelectItem>
                                                         {brands.map((b) => (
                                                             <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>
                                                         ))}
@@ -262,21 +384,10 @@ export default function Products() {
                                     />
                                     <FormField
                                         control={form.control}
-                                        name="original_price"
+                                        name="compare_price"
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Original Price</FormLabel>
-                                                <FormControl><Input type="number" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="stock_quantity"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Stock</FormLabel>
                                                 <FormControl><Input type="number" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -328,7 +439,7 @@ export default function Products() {
                             <TableHead>Category</TableHead>
                             <TableHead>Brand</TableHead>
                             <TableHead>Price</TableHead>
-                            <TableHead>Stock</TableHead>
+                            <TableHead>SKU</TableHead>
                             <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -347,7 +458,7 @@ export default function Products() {
                                 <TableCell>{categories.find(c => c.id === product.category_id)?.name}</TableCell>
                                 <TableCell>{brands.find(b => b.id === product.brand_id)?.name}</TableCell>
                                 <TableCell>${product.price}</TableCell>
-                                <TableCell>{product.stock_quantity}</TableCell>
+                                <TableCell>{product.sku}</TableCell>
                                 <TableCell>
                                     <div className="flex space-x-2">
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(product)}>

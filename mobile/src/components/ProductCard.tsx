@@ -43,12 +43,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
 const styles = StyleSheet.create({
     container: {
-        width: 150,
+        width: "48%",
         marginRight: 16,
         marginBottom: 24,
     },
     imageContainer: {
-        width: 150,
+        width: "100%",
         height: 184,
         borderRadius: 8,
         overflow: 'hidden',
